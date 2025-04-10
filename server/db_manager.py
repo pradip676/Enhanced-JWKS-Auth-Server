@@ -6,6 +6,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+
 DB_FILE = "totally_not_my_privateKeys.db"
 
 # 32-byte AES key derived from environment or fallback
@@ -15,6 +16,7 @@ if len(raw_key) < 32:
 elif len(raw_key) > 32:
     raw_key = raw_key[:32]
 AES_KEY = raw_key.encode("utf-8")
+
 
 def setup_database():
     with sqlite3.connect(DB_FILE) as connection:
@@ -28,17 +30,20 @@ def setup_database():
             '''
         )
 
+
 def aes_encrypt(plaintext: bytes, key: bytes) -> bytes:
     iv = os.urandom(12)
     aesgcm = AESGCM(key)
     ciphertext = aesgcm.encrypt(iv, plaintext, None)
     return iv + ciphertext
 
+
 def aes_decrypt(data: bytes, key: bytes) -> bytes:
     iv = data[:12]
     ciphertext = data[12:]
     aesgcm = AESGCM(key)
     return aesgcm.decrypt(iv, ciphertext, None)
+
 
 def store_rsa_key(rsa_obj, expiry):
     pem_data = rsa_obj.private_bytes(
@@ -49,8 +54,10 @@ def store_rsa_key(rsa_obj, expiry):
     encrypted_blob = aes_encrypt(pem_data, AES_KEY)
     with sqlite3.connect(DB_FILE) as conn:
         conn.execute(
-            'INSERT INTO keys (key, exp) VALUES (?, ?)', (encrypted_blob, expiry)
+            'INSERT INTO keys (key, exp) VALUES (?, ?)',
+            (encrypted_blob, expiry)
         )
+
 
 def get_rsa_key(get_expired=False):
     now_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
@@ -72,19 +79,28 @@ def get_rsa_key(get_expired=False):
         return kid, rsa_key
     return None, None
 
+
 def generate_and_save_keys():
     now_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
 
-    valid_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    expired_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    valid_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048
+    )
+    expired_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048
+    )
 
     store_rsa_key(valid_key, now_ts + 3600)
     store_rsa_key(expired_key, now_ts - 3600)
+
 
 def fetch_valid_keys():
     now_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
     with sqlite3.connect(DB_FILE) as connection:
         cursor = connection.execute(
-            'SELECT kid, key FROM keys WHERE exp > ?', (now_ts,)
+            'SELECT kid, key FROM keys WHERE exp > ?',
+            (now_ts,)
         )
         return cursor.fetchall()

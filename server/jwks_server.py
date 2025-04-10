@@ -21,7 +21,9 @@ from .db_manager import (
     AES_KEY
 )
 
+
 app = Flask(__name__)
+
 
 class TimeWindowRateLimiter:
     def __init__(self, max_requests, time_window):
@@ -33,15 +35,20 @@ class TimeWindowRateLimiter:
     def allow_request(self):
         current_time = time()
         with self.lock:
-            while self.requests and self.requests[0] < current_time - self.time_window:
+            while (
+                self.requests
+                and self.requests[0] < current_time - self.time_window
+            ):
                 self.requests.popleft()
             if len(self.requests) < self.max_requests:
                 self.requests.append(current_time)
                 return True
             return False
 
+
 auth_limiter = TimeWindowRateLimiter(max_requests=10, time_window=1)
 ph = PasswordHasher()
+
 
 def create_users_table():
     with sqlite3.connect("totally_not_my_privateKeys.db") as conn:
@@ -57,6 +64,7 @@ def create_users_table():
         """)
         conn.commit()
 
+
 def create_auth_logs_table():
     with sqlite3.connect("totally_not_my_privateKeys.db") as conn:
         conn.execute("""
@@ -70,11 +78,13 @@ def create_auth_logs_table():
         """)
         conn.commit()
 
+
 # Initialize database structure
 setup_database()
 create_users_table()
 create_auth_logs_table()
 generate_and_save_keys()
+
 
 @app.route("/register", methods=["POST"])
 def register():
@@ -85,20 +95,24 @@ def register():
     if not username:
         return jsonify({"error": "Username is required"}), 400
 
-    password = str(os.urandom(16).hex())  
+    password = str(os.urandom(16).hex())
     password_hash = ph.hash(password)
 
     try:
         with sqlite3.connect("totally_not_my_privateKeys.db") as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO users (username, password_hash, email)
                 VALUES (?, ?, ?)
-            """, (username, password_hash, email))
+                """,
+                (username, password_hash, email)
+            )
             conn.commit()
     except sqlite3.IntegrityError:
         return jsonify({"error": "Username or email already exists"}), 409
 
     return jsonify({"password": password}), 201
+
 
 @app.route("/auth", methods=["POST"])
 def auth_user():
@@ -113,10 +127,16 @@ def auth_user():
         return jsonify({"error": "Username and password are required"}), 400
 
     with sqlite3.connect("totally_not_my_privateKeys.db") as conn:
-        cursor = conn.execute("SELECT id, password_hash FROM users WHERE username = ?", (username,))
+        cursor = conn.execute(
+            "SELECT id, password_hash FROM users WHERE username = ?",
+            (username,)
+        )
         row = cursor.fetchone()
         user_id = row[0] if row else None
-        conn.execute("INSERT INTO auth_logs (request_ip, user_id) VALUES (?, ?)", (request.remote_addr, user_id))
+        conn.execute(
+            "INSERT INTO auth_logs (request_ip, user_id) VALUES (?, ?)",
+            (request.remote_addr, user_id)
+        )
         conn.commit()
 
     if not row:
@@ -129,7 +149,10 @@ def auth_user():
         return jsonify({"error": "Invalid credentials"}), 401
 
     with sqlite3.connect("totally_not_my_privateKeys.db") as conn:
-        conn.execute("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?", (user_id,))
+        conn.execute(
+            "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?",
+            (user_id,)
+        )
         conn.commit()
 
     use_expired = (request.args.get("expired", "false").lower() == "true")
@@ -139,7 +162,10 @@ def auth_user():
         return jsonify({"error": "No appropriate key found"}), 404
 
     now = datetime.datetime.now(datetime.timezone.utc)
-    exp_time = now - datetime.timedelta(minutes=30) if use_expired else now + datetime.timedelta(minutes=30)
+    exp_time = (
+        now - datetime.timedelta(minutes=30)
+        if use_expired else now + datetime.timedelta(minutes=30)
+    )
 
     payload = {
         "sub": username,
@@ -153,18 +179,28 @@ def auth_user():
         algorithm="RS256",
         headers={"kid": str(kid)}
     )
+
     return jsonify({"token": token}), 200
+
 
 @app.route('/.well-known/jwks.json', methods=['GET'])
 def serve_jwks():
     jwks_keys = []
     valid_keys = fetch_valid_keys()
+
     for kid, encrypted_data in valid_keys:
         pem_data = aes_decrypt(encrypted_data, AES_KEY)
-        private_key = serialization.load_pem_private_key(pem_data, password=None)
+        private_key = serialization.load_pem_private_key(
+            pem_data,
+            password=None
+        )
         public_numbers = private_key.public_key().public_numbers()
-        n_bytes = public_numbers.n.to_bytes((public_numbers.n.bit_length() + 7) // 8, 'big')
-        e_bytes = public_numbers.e.to_bytes((public_numbers.e.bit_length() + 7) // 8, 'big')
+        n_bytes = public_numbers.n.to_bytes(
+            (public_numbers.n.bit_length() + 7) // 8, 'big'
+        )
+        e_bytes = public_numbers.e.to_bytes(
+            (public_numbers.e.bit_length() + 7) // 8, 'big'
+        )
 
         jwks_keys.append({
             'kid': str(kid),
@@ -174,12 +210,18 @@ def serve_jwks():
             'n': base64.urlsafe_b64encode(n_bytes).decode().rstrip('='),
             'e': base64.urlsafe_b64encode(e_bytes).decode().rstrip('=')
         })
+
     return jsonify({'keys': jwks_keys})
+
 
 @app.route('/auth', methods=['GET', 'PUT', 'DELETE', 'PATCH'])
 def auth_invalid():
     return make_response(jsonify({'message': 'Method Not Allowed'}), 405)
 
-@app.route('/.well-known/jwks.json', methods=['POST', 'PUT', 'DELETE', 'PATCH'])
+
+@app.route(
+    '/.well-known/jwks.json',
+    methods=['POST', 'PUT', 'DELETE', 'PATCH']
+)
 def jwks_invalid():
     return make_response(jsonify({'message': 'Method Not Allowed'}), 405)
