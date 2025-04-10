@@ -4,6 +4,8 @@ import json
 import datetime
 import time
 
+from server.jwks_server import auth_limiter
+auth_limiter.requests.clear()
 from server.jwks_server import app, create_users_table, create_auth_logs_table
 from server.db_manager import (
     setup_database,
@@ -112,7 +114,7 @@ class TestProject3JWKS(unittest.TestCase):
         now = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
         expired_rsa_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
         store_rsa_key(expired_rsa_key, now - 3600)
-        
+
         kid, key = get_rsa_key(get_expired=True)
         self.assertIsNotNone(kid)
         self.assertIsNotNone(key)
@@ -130,6 +132,14 @@ class TestProject3JWKS(unittest.TestCase):
         generate_and_save_keys()
         response = self.client.post("/auth", json={"username": "nouser", "password": "x"})
         self.assertEqual(response.status_code, 401)
+
+    def test_fetch_valid_keys_directly(self):
+        """Test fetch_valid_keys() returns unexpired keys."""
+        generate_and_save_keys()
+        keys = fetch_valid_keys()
+        self.assertGreater(len(keys), 0)
+        self.assertIsInstance(keys[0][0], int)  # kid
+        self.assertIsInstance(keys[0][1], bytes)  # encrypted key blob    
 
 if __name__ == "__main__":
     unittest.main()
