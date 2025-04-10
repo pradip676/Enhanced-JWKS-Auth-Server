@@ -1,14 +1,13 @@
-# JWKS Server (Project 3 - Enhanced Version with AES Encryption)
+# JWKS Server (Project 3 - Bulking Up JWKS with User Auth & Key Encryption)
 
-This project further extends the JWKS authentication server by requiring **pre-exported keys** for secure startup. It supports AES-encrypted private key storage in SQLite and enforces key availability before operation.
+This project enhances the JWKS server by implementing **AES encryption for private keys**, **user registration**, **authentication logging**, and an optional **rate limiter** to improve security and accountability.
 
 ## Features
-- **SQLite-backed encrypted key storage** using AES-GCM
-- **RSA key export requirement before runtime**
-- **JWT signing** with securely stored private keys
-- **Secure RESTful API** for auth and JWKS retrieval
-- **Comprehensive test suite** for full feature validation
-- **Gradebot compatible** for automatic testing and grading
+- **AES-encrypted RSA private keys** stored securely in SQLite
+- **User registration** with Argon2 password hashing and UUID-based password generation
+- **Authentication logs** including timestamp, IP, and user ID
+- Optional **rate limiting** (10 requests/second) for `/auth` endpoint
+- **Test suite** for >90% coverage and **Gradebot compatible**
 
 ## Project Structure
 ```
@@ -45,12 +44,17 @@ cd Enhanced-JWKS-Auth-Server
 
 ## Key Export (Before Running)
 Before running the server, make sure to **export the AES key** as an environment variable:
+(Run the follwoing command in the terminal)
 
 ```bash
-export NOT_MY_KEY="11821781"  # or use a stronger 32-character key
+export NOT_MY_KEY="11821781"  # For MacOS/Linux
 ```
-
+or 
+```bash
+$env:NOT_MY_KEY="11821781"  # For Windows PowerShell
+```
 > Note: If your key is shorter than 32 characters, it will be padded automatically.
+> Required: AES key must be set for encryption/decryption of private keys.
 
 ## Linting
 Check and follow PEP8 standards using flake8:
@@ -62,38 +66,103 @@ flake8 .
 ```bash
 python3 run.py
 ```
+or,
+```bash
+python run.py
+```
 The server will be live at `http://127.0.0.1:8080`
 
 ## Endpoints
 
-### 1. JWKS Endpoint
-- `GET /.well-known/jwks.json` – Returns all valid public keys
-- Invalid methods (POST, PUT, DELETE, PATCH) – `405 Method Not Allowed`
+### 1. `/register`
 
-### 2. Authentication Endpoint
-- `POST /auth` – Issues a JWT if user exists and credentials are correct
-- `POST /auth?expired=true` – Returns expired JWT for testing
-- Invalid methods (GET, PUT, DELETE, PATCH) – `405 Method Not Allowed`
+- Method: `POST`
+- Request JSON: `{ "username": "$MyCoolUsername", "email": "$MyCoolEmail" }`
+- Returns: `{ "password": "$UUIDv4" }`
+- Status Code: `200 OK` or `201 CREATED`
+- Hashes the password using **Argon2** with configurable parameters
+- Stores user in the `users` table securely
+
+### 2. `/auth`
+
+- Method: `POST`
+- Returns: `{ "token": "JWT" }` if valid, or appropriate error response
+- Optional: `?expired=true` to get an expired token
+- Logs successful attempts to `auth_logs` table
+- Returns 429 if rate-limited (if enabled)
+
+### 3. `/.well-known/jwks.json`
+
+- Method: `GET`
+- Returns current valid public keys in JWKS format
+
+### Invalid Methods
+
+- All other methods (e.g., PUT, DELETE, PATCH) return 405
 
 ## Testing the Server Manually
 
-### 1. Get a JWT
+### 1. Register a New User
+
 ```bash
-curl -X POST http://127.0.0.1:8080/auth \
-     -H "Content-Type: application/json" \
-     -d '{"username": "userABC", "password": "yourpassword"}'
+curl -X POST http://127.0.0.1:8080/register -H "Content-Type: application/json" -d '{"username": "ps1093", "email": "ps1093@my.unt.edu"}'
 ```
 
-### 2. Get JWKS
+Sample output:
+
+```json
+{
+  "password": "3ff4075b8975208bb69780534d56dcee"
+}
+```
+
+### 2. Get a Valid JWT:
+
+```bash
+curl -X POST http://127.0.0.1:8080/auth -H "Content-Type: application/json" -d '{"username": "ps1093", "password": "3ff4075b8975208bb69780534d56dcee"}'
+```
+
+Sample output:
+
+```json
+{
+  "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjEiLCJ0eXAiO..."
+}
+```
+
+### 3. Get Public Keys (JWKS):
+
 ```bash
 curl -X GET http://127.0.0.1:8080/.well-known/jwks.json
 ```
 
+Sample output:
+
+```json
+{  
+  "keys": [  
+    {  
+      "alg": "RS256",  
+      "e": "AQAB",  
+      "kid": "1",  
+      "kty": "RSA",  
+      "n": "zw4EIM6DTAnAxSaW1B2gQK5WV5IIhCpGYLD...",  
+      "use": "sig"  
+    }  
+  ]  
+}
+```
+
 ## Testing
 
+### Run Tests
+
+```bash
+python -m pytest tests/
+```
 ### Run Tests with Coverage
 ```bash
-python3 -m pytest --cov=server --cov-report=term tests/
+python -m pytest --cov=server --cov-report=term tests/
 ```
 
 ### Test Coverage Sample Output
