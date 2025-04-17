@@ -10,7 +10,10 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 DB_FILE = "totally_not_my_privateKeys.db"
 
 # 32-byte AES key derived from environment or fallback
-raw_key = os.environ["NOT_MY_KEY"] = "test_mode_32_byte_secret_______"
+raw_key = os.environ.get("NOT_MY_KEY")
+if not raw_key:
+    raise EnvironmentError("Environment variable 'NOT_MY_KEY' is not set.")
+    
 if len(raw_key) < 32:
     raw_key = raw_key.ljust(32, "_")
 elif len(raw_key) > 32:
