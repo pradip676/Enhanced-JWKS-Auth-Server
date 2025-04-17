@@ -13,7 +13,7 @@ DB_FILE = "totally_not_my_privateKeys.db"
 raw_key = os.environ.get("NOT_MY_KEY")
 if not raw_key:
     raise EnvironmentError("Environment variable 'NOT_MY_KEY' is not set.")
-    
+
 if len(raw_key) < 32:
     raw_key = raw_key.ljust(32, "_")
 elif len(raw_key) > 32:
