@@ -26,6 +26,11 @@ This project enhances the JWKS server by implementing **AES encryption for priva
 
 ## Installation & Setup
 
+### Clone the Repository
+```bash
+git clone https://github.com/pradip676/Enhanced-JWKS-Auth-Server.git
+cd Enhanced-JWKS-Auth-Server
+```
 ### Prerequisites
 Install required dependencies from `requirements.txt`:
 ```bash
@@ -34,12 +39,6 @@ pip install -r requirements.txt
 or,
 ```bash
 pip3 install -r requirements.txt
-```
-
-### Clone the Repository
-```bash
-git clone https://github.com/pradip676/Enhanced-JWKS-Auth-Server.git
-cd Enhanced-JWKS-Auth-Server
 ```
 
 ## Key Export (Before Running)
