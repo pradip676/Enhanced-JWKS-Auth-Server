@@ -45,12 +45,17 @@ pip3 install -r requirements.txt
 Before running the server, make sure to **export the AES key** as an environment variable:
 (Run the follwoing command in the terminal)
 
+# For MacOS/Linux
 ```bash
-export NOT_MY_KEY="11821781"  # For MacOS/Linux
+export NOT_MY_KEY="my_32_byte_secret_key_example!!"
 ```
-or 
+# For Windows PowerShell
 ```bash
-$env:NOT_MY_KEY="11821781"  # For Windows PowerShell
+$env:NOT_MY_KEY = "my_32_byte_secret_key_example!!"  
+```
+# Windows CMD (Command Prompt)
+```bash
+set NOT_MY_KEY=my_32_byte_secret_key_example!!  
 ```
 > Note: If your key is shorter than 32 characters, it will be padded automatically.
 > Required: AES key must be set for encryption/decryption of private keys.
