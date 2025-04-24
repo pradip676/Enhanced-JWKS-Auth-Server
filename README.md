@@ -116,21 +116,21 @@ Sample output:
 
 ```json
 {
-  "password": "3ff4075b8975208bb69780534d56dcee"
+  "password": "f535a8569fca08502b691dd027a30fde"
 }
 ```
 
 ### 2. Get a Valid JWT:
 
 ```bash
-curl -X POST http://127.0.0.1:8080/auth -H "Content-Type: application/json" -d '{"username": "ps1093", "password": "3ff4075b8975208bb69780534d56dcee"}'
+curl -X POST http://127.0.0.1:8080/auth -H "Content-Type: application/json" -d '{"username": "ps1093", "password": "f535a8569fca08502b691dd027a30fde"}'
 ```
 
 Sample output:
 
 ```json
 {
-  "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjEiLCJ0eXAiO..."
+  "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6Ijc3IiwidH..."
 }
 ```
 
@@ -148,9 +148,9 @@ Sample output:
     {  
       "alg": "RS256",  
       "e": "AQAB",  
-      "kid": "1",  
+      "kid": "77",  
       "kty": "RSA",  
-      "n": "zw4EIM6DTAnAxSaW1B2gQK5WV5IIhCpGYLD...",  
+      "n": "462VILuvdgsCsceRIFujmB6PXHajkl9wYrf3BvX8...",  
       "use": "sig"  
     }  
   ]  
@@ -174,18 +174,18 @@ python -m pytest --cov=server --cov-report=term tests/
 platform darwin -- Python 3.12.5, pytest-8.3.4, pluggy-1.5.0
 rootdir: /Users/pradipsapkota/Documents/Enhanced-JWKS-Auth-Server
 plugins: cov-6.0.0
-collected 11 items
+collected 11 items                                                                                                                                       
 
-tests/test_jwks_server.py ...........
+tests/test_jwks_server.py ........... 
 
 ---------- coverage: platform darwin, python 3.12.5-final-0 ----------
 Name                    Stmts   Miss  Cover
 -------------------------------------------
 server/__init__.py          0      0   100%
-server/db_manager.py       54      3    94%
+server/db_manager.py       56      4    93%
 server/jwks_server.py     111      5    95%
 -------------------------------------------
-TOTAL                     165      8    95%
+TOTAL                     167      9    95%
 ```
 
 ## Run the test client (Gradebot)
