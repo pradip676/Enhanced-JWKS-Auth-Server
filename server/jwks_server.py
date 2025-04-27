@@ -29,21 +29,26 @@ class TimeWindowRateLimiter:
     def __init__(self, max_requests, time_window):
         self.max_requests = max_requests
         self.time_window = time_window
-        self.requests = deque()
+        self.requests = {}  # Track requests per IP
         self.lock = Lock()
 
-    def allow_request(self):
+    def allow_request(self, ip):
         current_time = time()
         with self.lock:
-            while (
-                self.requests
-                and self.requests[0] < current_time - self.time_window
-            ):
-                self.requests.popleft()
-            if len(self.requests) < self.max_requests:
-                self.requests.append(current_time)
+            if ip not in self.requests:
+                self.requests[ip] = deque()
+
+            request_times = self.requests[ip]
+
+            # Remove old timestamps outside the window
+            while request_times and (current_time - request_times[0]) > self.time_window:
+                request_times.popleft()
+
+            if len(request_times) < self.max_requests:
+                request_times.append(current_time)
                 return True
-            return False
+            else:
+                return False
 
 
 auth_limiter = TimeWindowRateLimiter(max_requests=10, time_window=1)
@@ -116,7 +121,7 @@ def register():
 
 @app.route("/auth", methods=["POST"])
 def auth_user():
-    if not auth_limiter.allow_request():
+    if not auth_limiter.allow_request(request.remote_addr):
         return jsonify({"error": "Too Many Requests"}), 429
 
     data = request.json or {}
