@@ -172,20 +172,20 @@ python -m pytest --cov=server --cov-report=term tests/
 ### Test Coverage Sample Output
 ```
 platform darwin -- Python 3.12.5, pytest-8.3.4, pluggy-1.5.0
-rootdir: /Users/pradipsapkota/Documents/Enhanced-JWKS-Auth-Server
-plugins: cov-6.0.0
+rootdir: /Users/pradipsapkota/Documents/Enhanced-JWKS-Auth-Server-1
+plugins: cov-6.0.0, Faker-37.1.0
 collected 11 items                                                                                                                                       
 
-tests/test_jwks_server.py ........... 
+tests/test_jwks_server.py ...........  
 
 ---------- coverage: platform darwin, python 3.12.5-final-0 ----------
 Name                    Stmts   Miss  Cover
 -------------------------------------------
 server/__init__.py          0      0   100%
 server/db_manager.py       56      4    93%
-server/jwks_server.py     111      5    95%
+server/jwks_server.py     114      5    96%
 -------------------------------------------
-TOTAL                     167      9    95%
+TOTAL                     170      9    95%
 ```
 
 ## Run the test client (Gradebot)

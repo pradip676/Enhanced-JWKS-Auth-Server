@@ -41,7 +41,9 @@ class TimeWindowRateLimiter:
             request_times = self.requests[ip]
 
             # Remove old timestamps outside the window
-            while request_times and (current_time - request_times[0]) > self.time_window:
+            while request_times and (
+                current_time - request_times[0]
+            ) > self.time_window:
                 request_times.popleft()
 
             if len(request_times) < self.max_requests:
